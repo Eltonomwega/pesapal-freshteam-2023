@@ -2,13 +2,22 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-public class TCPServer {
-  private static final int N = 5;
+public class Server {
+  private static int N =0;
   private static ArrayList<ClientHandler> clients = new ArrayList<>();
 
   public static void main(String[] args) throws IOException {
+
+    Scanner scan = new Scanner(System.in);
+    while(N <= 0){
+      System.out.print("Set the maximum number of clients: ");
+      N = scan.nextInt();
+    }
+    //close the scanner
+    scan.close();
     try (ServerSocket server = new ServerSocket(8080)) {
-        while (true) {
+        // check if server connections have reached the maximum
+        while (clients.size() < N) {
           Socket socket = server.accept();
           ClientHandler client = new ClientHandler(socket);
           clients.add(client);
@@ -60,7 +69,7 @@ public class TCPServer {
         } catch (IOException e) {
           System.err.println(e);
         }
-
+        // remove the client from the arraylist
         clients.remove(this);
         for (int i = rank; i < clients.size(); i++) {
           clients.get(i).rank--;
