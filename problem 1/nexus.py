@@ -1,94 +1,66 @@
+import os
 import yaml
 import markdown
 from pathlib import Path
-import os
 
-class nexus:
-    def __init__(self,config:str) -> None:
-        config= yaml.safe_load(Path(config).read_text())
+class Nexus:
+    def __init__(self, config_file):
+        with open(config_file) as f:
+            config = yaml.safe_load(f)
         self.title = config["title"]
         self.favicon = config["favicon"]
         self.profile = config["profile"]
-    
-    '''
-      # generate html from the markdown
-    '''
-    def _gen_html(self,content:str):
+
+    def generate_html(self, content):
         return markdown.markdown(content)
-    
-    def get_template(self,template:str)->str:
-        # Read in the appropriate template file
-        with open(f"website/template/{template}.html", "r") as f:
-            template = f.read()
-        # add title
-        return template.replace("{{title}}",self.title)
-        
-    # get a list of cards  
-    def gen_blog_list(self,path:str)->list:
+
+    def get_template(self, template):
+        with open(f"website/template/{template}.html") as f:
+            return f.read().replace("{{title}}", self.title)
+
+    def generate_blog_list(self, path):
         result = []
         for filename in os.listdir(path):
-            filepath = os.path.join(path,filename)
-            
-            # check if is a file
+            filepath = os.path.join(path, filename)
             if os.path.isfile(filepath):
-                with open(f""+filepath,"r") as f:
+                with open(filepath) as f:
                     markdown_text = f.read()
-                template = markdown_text.split("---")    
-                variables = template[1]
+                variables, content = markdown_text.split("---")[1:]
                 config = yaml.safe_load(variables)
-                # build the card
-                with open(f"website/template/blog_card.html","r") as f:
+                with open("website/template/blog_card.html") as f:
                     card = f.read()
-                card = card.replace("{{title}}",config["title"])
-                card = card.replace("{{description}}",config["description"])
-                card = card.replace("{{page}}",filename.split(".")[0])
+                card = card.replace("{{title}}", config["title"])
+                card = card.replace("{{description}}", config["description"])
+                card = card.replace("{{page}}", filename.split(".")[0])
                 result.append(card)
         return result
-    
-    def gen_posts(self):
+
+    def generate_posts(self):
         path = "website/pages/posts"
         for filename in os.listdir(path):
-            filepath = os.path.join(path,filename)
+            filepath = os.path.join(path, filename)
             if os.path.isfile(filepath):
-                with open(f""+filepath,"r") as f:
+                with open(filepath) as f:
                     markdown_text = f.read()
-                markdown_text = markdown_text.split("---")[2]
+                content = markdown_text.split("---")[2]
                 template = self.get_template("article")
-                template = template.replace("{{Content}}",self._gen_html(markdown_text))
-                with open(f"website/output/posts/"+filename.split(".")[0]+".html","w+") as f:
-                    f.write(template) 
-    '''
-     # build the page
-    '''
-    def gen_page(self,markdown_page:str,template:str):
-        
-        with open(f"website/pages/{markdown_page}.md", "r") as f:
-            markdown_text = f.read()
-        # Convert Markdown to HTML
-        html = self._gen_html(markdown_text)
-        # Replace the placeholder in the template with the generated HTML
-        final_html = template.replace("{{Content}}", html)
+                template = template.replace("{{Content}}", self.generate_html(content))
+                with open(f"website/output/posts/{filename.split('.')[0]}.html", "w+") as f:
+                    f.write(template)
 
-        # Write out the final HTML to a file
+    def generate_page(self, markdown_page, template):
+        with open(f"website/pages/{markdown_page}.md") as f:
+            markdown_text = f.read()
+        html = self.generate_html(markdown_text)
+        final_html = template.replace("{{Content}}", html)
         with open(f"website/output/{markdown_page}.html", "w+") as f:
             f.write(final_html)
 
-
-
-
-
-
-Builder = nexus("website/config.yml")
-# gen the home and about page
-Builder.gen_page("home",Builder.get_template("home"))
-Builder.gen_page("about",Builder.get_template("about"))
-
-# gen the blog list
-blogs = Builder.gen_blog_list("website/pages/posts")
-blog_page = Builder.get_template("blog")
-blog_page = blog_page.replace("{{Content}}",' '.join(blogs))
-with open(f"website/output/blog.html","w+") as f:
+builder = Nexus("website/config.yml")
+builder.generate_page("home", builder.get_template("home"))
+builder.generate_page("about", builder.get_template("about"))
+blogs = builder.generate_blog_list("website/pages/posts")
+blog_page = builder.get_template("blog").replace("{{Content}}", " ".join(blogs))
+with open("website/output/blog.html", "w+") as f:
     f.write(blog_page)
-
-# gen articles
-Builder.gen_posts()   
+builder.generate_posts()
