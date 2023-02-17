@@ -55,7 +55,7 @@ class nexus:
                 markdown_text = markdown_text.split("---")[2]
                 template = self.get_template("article")
                 template = template.replace("{{Content}}",self._gen_html(markdown_text))
-                with open(f"website/my-site/posts/"+filename.split(".")[0]+".html","w+") as f:
+                with open(f"website/output/posts/"+filename.split(".")[0]+".html","w+") as f:
                     f.write(template) 
     '''
      # build the page
@@ -70,7 +70,7 @@ class nexus:
         final_html = template.replace("{{Content}}", html)
 
         # Write out the final HTML to a file
-        with open(f"website/my-site/{markdown_page}.html", "w+") as f:
+        with open(f"website/output/{markdown_page}.html", "w+") as f:
             f.write(final_html)
 
 
@@ -87,7 +87,7 @@ Builder.gen_page("about",Builder.get_template("about"))
 blogs = Builder.gen_blog_list("website/pages/posts")
 blog_page = Builder.get_template("blog")
 blog_page = blog_page.replace("{{Content}}",' '.join(blogs))
-with open(f"website/my-site/blog.html","w+") as f:
+with open(f"website/output/blog.html","w+") as f:
     f.write(blog_page)
 
 # gen articles
